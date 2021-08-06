@@ -18,14 +18,14 @@ Create table: <br />
 
 # API :
 
- - GET:
+ - GET: <br />
     Get all items : /items <br />
     Get item by id : /items/{id} <br />
- - POST:
+ - POST: <br />
     Create new item : /items <br />
- - PUT:
+ - PUT: <br />
     Update item's status by id : /items/{id} <br />
     Update all item's statuses : /items <br />
- - DELETE:
+ - DELETE: <br />
     Delete item by id : /items/{id} <br />
     Delete all items : /items
