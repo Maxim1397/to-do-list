@@ -17,6 +17,7 @@ Create table: <br />
 - alter table items owner to postgres
 
 # API :
+After application build:
     http://localhost:8084
  - GET: <br />
     Get all items : /items <br />
@@ -29,3 +30,6 @@ Create table: <br />
  - DELETE: <br />
     Delete item by id : /items/{id} <br />
     Delete all items : /items
+ 
+# Postman (API platform for building and using APIs)
+https://www.postman.com/
