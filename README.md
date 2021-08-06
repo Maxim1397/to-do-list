@@ -17,7 +17,7 @@ Create table: <br />
 - alter table items owner to postgres
 
 # API :
-    http://localhost:8084  <br />
+    http://localhost:8084
  - GET: <br />
     Get all items : /items <br />
     Get item by id : /items/{id} <br />
