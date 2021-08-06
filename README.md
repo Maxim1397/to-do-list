@@ -15,3 +15,17 @@ Create table: <br />
     status      boolean default false    not null <br />
 ); <br />
 - alter table items owner to postgres
+
+# API :
+
+GET:
+ - Get all items : /items <br />
+ - Get item by id : /items/{id} <br />
+POST:
+ - Create new item : /items <br />
+PUT:
+ - Update item's status by id : /items/{id} <br />
+ - Update all item's statuses : /items <br />
+DELETE:
+ - Delete item by id : /items/{id} <br />
+ - Delete all items : /items
