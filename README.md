@@ -2,7 +2,7 @@
 API for ToDo list
 
 # How to build Go application:
-https://golang.org/doc/tutorial/compile-install __
+https://golang.org/doc/tutorial/compile-install__
 
 # PostgreSQL:
 https://www.postgresql.org/download/ __
