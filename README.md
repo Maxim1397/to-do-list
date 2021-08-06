@@ -1,6 +1,9 @@
 # to-do-list
 API for ToDo list <br />
 
+# IDE for Go:
+https://www.jetbrains.com/go/promo/?gclid=Cj0KCQjwu7OIBhCsARIsALxCUaMHcehipAVScSinCF7HRn70vrvrQhFfbvxAbjKU7LAwCCTvEQs8YSIaAi8UEALw_wcB
+
 # How to build Go application:
 https://golang.org/doc/tutorial/compile-install <br />
 
@@ -33,3 +36,6 @@ After application build:
  
 # Postman (API platform for building and using APIs)
 https://www.postman.com/
+
+# Test
+    go test
