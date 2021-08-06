@@ -26,6 +26,9 @@ After application build:
     Get all items : /items <br />
     Get item by id : /items/{id} <br />
  - POST: <br />
+    {
+    "description": "Drink water"
+    }
     Create new item : /items <br />
  - PUT: <br />
     Update item's status by id : /items/{id} <br />
