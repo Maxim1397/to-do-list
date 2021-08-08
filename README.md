@@ -10,6 +10,8 @@ https://golang.org/doc/tutorial/compile-install <br />
 # PostgreSQL:
 https://www.postgresql.org/download/ <br />
 See .env file for credentials. <br />
+Create db: <br />
+CREATE DATABASE todolist;
 Create table: <br />
 - create table items<br />
 ( <br />
