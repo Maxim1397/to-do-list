@@ -11,7 +11,7 @@ import (
 
 func TestGetAllItems(t *testing.T) {
 	r := mux.NewRouter()
-	r.HandleFunc("/items", handlers.GetAllItems)
+	r.HandleFunc("/items", handlers.NewHandler().GetAllItems)
 	ts := httptest.NewServer(r)
 	defer ts.Close()
 	res, err := http.Get(ts.URL + "/items")
@@ -27,7 +27,7 @@ func TestGetAllItems(t *testing.T) {
 
 func TestGetItem(t *testing.T) {
 	r := mux.NewRouter()
-	r.HandleFunc("/items/{id}", handlers.GetItem)
+	r.HandleFunc("/items/{id}", handlers.NewHandler().GetItem)
 	ts := httptest.NewServer(r)
 	defer ts.Close()
 	t.Run("not found", func(t *testing.T) {
@@ -56,7 +56,7 @@ func TestGetItem(t *testing.T) {
 
 func TestCreateItem(t *testing.T) {
 	r := mux.NewRouter()
-	r.HandleFunc("/items", handlers.CreateItem)
+	r.HandleFunc("/items", handlers.NewHandler().CreateItem)
 	ts := httptest.NewServer(r)
 	defer ts.Close()
 	res, err := http.Post(ts.URL+"/items", "application/json", strings.NewReader(`{"description":"Drink water"}`))
@@ -72,7 +72,7 @@ func TestCreateItem(t *testing.T) {
 func TestUpdateItemStatus(t *testing.T) {
 	client := &http.Client{}
 	r := mux.NewRouter()
-	r.HandleFunc("/items/"+"{id}", handlers.UpdateItemStatus)
+	r.HandleFunc("/items/"+"{id}", handlers.NewHandler().UpdateItemStatus)
 	ts := httptest.NewServer(r)
 	defer ts.Close()
 	t.Run("not found", func(t *testing.T) {
@@ -94,7 +94,7 @@ func TestUpdateItemStatus(t *testing.T) {
 		}
 	})
 	t.Run("found", func(t *testing.T) {
-		req, err := http.NewRequest(http.MethodPut, ts.URL+"/items/60", nil)
+		req, err := http.NewRequest(http.MethodPut, ts.URL+"/items/1", nil)
 		if err != nil {
 			t.Errorf(err.Error())
 			return
@@ -116,7 +116,7 @@ func TestUpdateItemStatus(t *testing.T) {
 func TestUpdateAllItemsStatus(t *testing.T) {
 	client := &http.Client{}
 	r := mux.NewRouter()
-	r.HandleFunc("/items", handlers.UpdateAllItemsStatus)
+	r.HandleFunc("/items", handlers.NewHandler().UpdateAllItemsStatus)
 	ts := httptest.NewServer(r)
 	defer ts.Close()
 	req, err := http.NewRequest(http.MethodPut, ts.URL+"/items", nil)
@@ -140,7 +140,7 @@ func TestUpdateAllItemsStatus(t *testing.T) {
 func TestDeleteItem(t *testing.T) {
 	client := &http.Client{}
 	r := mux.NewRouter()
-	r.HandleFunc("/items/"+"{id}", handlers.DeleteItem)
+	r.HandleFunc("/items/"+"{id}", handlers.NewHandler().DeleteItem)
 	ts := httptest.NewServer(r)
 	defer ts.Close()
 	t.Run("not found", func(t *testing.T) {
@@ -184,7 +184,7 @@ func TestDeleteItem(t *testing.T) {
 func TestDeleteAllItems(t *testing.T) {
 	client := &http.Client{}
 	r := mux.NewRouter()
-	r.HandleFunc("/items", handlers.DeleteAllItems)
+	r.HandleFunc("/items", handlers.NewHandler().DeleteAllItems)
 	ts := httptest.NewServer(r)
 	defer ts.Close()
 	req, err := http.NewRequest(http.MethodDelete, ts.URL+"/items", nil)

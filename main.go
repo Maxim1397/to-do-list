@@ -8,7 +8,7 @@ import (
 
 func main() {
 	r := router.Router()
-	log.Println("Starting server on the port :8084...")
-	//Start server on the port 8084
+	log.Println("Start server on port :8084...")
+	//Start server on port 8084
 	log.Fatal(http.ListenAndServe(":8084", r))
 }
