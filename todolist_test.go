@@ -1,206 +1,162 @@
 package main
 
 import (
-	"github.com/gorilla/mux" //used for routes
-	"net/http"
-	"net/http/httptest"
-	"strings"
+	"context"
+	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/jackc/pgx/v4/pgxpool"
+	"github.com/stretchr/testify/assert"
+	"log"
 	"testing"
-	"to-do-list/handlers"
+	"to-do-list/models"
+	"to-do-list/repository"
+	"zombiezen.com/go/postgrestest"
 )
 
-func TestGetAllItems(t *testing.T) {
-	r := mux.NewRouter()
-	r.HandleFunc("/items", handlers.NewHandler().GetAllItems)
-	ts := httptest.NewServer(r)
-	defer ts.Close()
-	res, err := http.Get(ts.URL + "/items")
+const createTable = `create table items
+					(
+					id serial not null constraint tasks_pkey primary key,
+					description text default ''::text not null,
+					status boolean default false not null
+					);`
+
+func NewMock() sqlmock.Sqlmock {
+	_, mock, err := sqlmock.New()
 	if err != nil {
-		t.Errorf("Expected nil, received %s", err.Error())
+		log.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
 	}
 
-	if res.StatusCode != http.StatusOK {
-		t.Errorf("Expected %d, received %d", http.StatusOK, res.StatusCode)
-	}
-
-}
-
-func TestGetItem(t *testing.T) {
-	r := mux.NewRouter()
-	r.HandleFunc("/items/{id}", handlers.NewHandler().GetItem)
-	ts := httptest.NewServer(r)
-	defer ts.Close()
-	t.Run("not found", func(t *testing.T) {
-		res, err := http.Get(ts.URL + "/items/1")
-		if err != nil {
-			t.Errorf("Expected nil, received %s", err.Error())
-		}
-
-		if res.StatusCode != http.StatusNotFound {
-			t.Errorf("Expected %d, received %d", http.StatusNotFound, res.StatusCode)
-		}
-
-	})
-
-	t.Run("found", func(t *testing.T) {
-		res, err := http.Get(ts.URL + "/items/70")
-		if err != nil {
-			t.Errorf("Expected nil, received %s", err.Error())
-		}
-
-		if res.StatusCode != http.StatusOK {
-			t.Errorf("Expected %d, received %d", http.StatusOK, res.StatusCode)
-		}
-	})
+	return mock
 }
 
 func TestCreateItem(t *testing.T) {
-	r := mux.NewRouter()
-	r.HandleFunc("/items", handlers.NewHandler().CreateItem)
-	ts := httptest.NewServer(r)
-	defer ts.Close()
-	res, err := http.Post(ts.URL+"/items", "application/json", strings.NewReader(`{"description":"Drink water"}`))
-	if err != nil {
-		t.Errorf("Expected nil, received %s", err.Error())
+	mock := NewMock()
+	ctx := context.Background()
+	srv, err := postgrestest.Start(ctx)
+	assert.NoError(t, err)
+	pool, err := pgxpool.Connect(context.Background(), srv.DefaultDatabase())
+	assert.NoError(t, err)
+	_, err = pool.Exec(ctx,createTable)
+	assert.NoError(t, err)
+	repo := repository.Connection{
+		Pool: pool,
 	}
-	if res.StatusCode != http.StatusOK {
-		t.Errorf("Expected %d, received %d", http.StatusOK, res.StatusCode)
+	defer repo.Pool.Close()
+
+	item := models.Item{
+		ID:          1,
+		Description: "description",
+		Status:      false,
+	}
+	query := "INSERT INTO items \\(id, description, status\\) VALUES \\(\\?, \\?, \\?\\)"
+	prep := mock.ExpectPrepare(query)
+	prep.ExpectExec().WithArgs(item.ID, item.Description, item.Status).WillReturnResult(sqlmock.NewResult(0, 1))
+	id, err := repo.InsertItem(item)
+	assert.Equal(t, id, item.ID)
+	assert.NoError(t, err)
+	t.Cleanup(srv.Cleanup)
+}
+
+func TestGetItem(t *testing.T) {
+	mock := NewMock()
+	ctx := context.Background()
+	srv, err := postgrestest.Start(ctx)
+	assert.NoError(t, err)
+	pool, err := pgxpool.Connect(context.Background(), srv.DefaultDatabase())
+	assert.NoError(t, err)
+	_, err = pool.Exec(ctx,createTable)
+	assert.NoError(t, err)
+	repo := repository.Connection{
+		Pool: pool,
+	}
+	defer repo.Pool.Close()
+
+	item := models.Item{
+		ID:          1,
+		Description: "description",
+		Status:      false,
 	}
 
+	//not to get "no rows in result set"
+	_, err = repo.InsertItem(item)
+	assert.NoError(t, err)
+
+	query := "SELECT id, description, status FROM items WHERE id = \\?"
+	rows := sqlmock.NewRows([]string{"id", "description", "status"})
+	mock.ExpectQuery(query).WithArgs(item.ID).WillReturnRows(rows)
+
+	getItem, err := repo.GetItem(item.ID)
+	assert.NoError(t, err)
+	assert.Equal(t, getItem, item)
+	t.Cleanup(srv.Cleanup)
 }
 
 func TestUpdateItemStatus(t *testing.T) {
-	client := &http.Client{}
-	r := mux.NewRouter()
-	r.HandleFunc("/items/"+"{id}", handlers.NewHandler().UpdateItemStatus)
-	ts := httptest.NewServer(r)
-	defer ts.Close()
-	t.Run("not found", func(t *testing.T) {
-		req, err := http.NewRequest(http.MethodPut, ts.URL+"/items/1", nil)
-		if err != nil {
-			t.Errorf(err.Error())
-			return
-		}
+	mock := NewMock()
+	ctx := context.Background()
+	srv, err := postgrestest.Start(ctx)
+	assert.NoError(t, err)
+	pool, err := pgxpool.Connect(context.Background(), srv.DefaultDatabase())
+	assert.NoError(t, err)
+	_, err = pool.Exec(ctx,createTable)
+	assert.NoError(t, err)
+	repo := repository.Connection{
+		Pool: pool,
+	}
+	defer repo.Pool.Close()
 
-		resp, err := client.Do(req)
-		if err != nil {
-			t.Errorf(err.Error())
-			return
-		}
-
-		defer resp.Body.Close()
-		if resp.StatusCode != http.StatusNotFound {
-			t.Errorf("Expected %d, received %d", http.StatusNotFound, resp.StatusCode)
-		}
-	})
-	t.Run("found", func(t *testing.T) {
-		req, err := http.NewRequest(http.MethodPut, ts.URL+"/items/1", nil)
-		if err != nil {
-			t.Errorf(err.Error())
-			return
-		}
-
-		resp, err := client.Do(req)
-		if err != nil {
-			t.Errorf(err.Error())
-			return
-		}
-
-		defer resp.Body.Close()
-		if resp.StatusCode != http.StatusOK {
-			t.Errorf("Expected %d, received %d", http.StatusOK, resp.StatusCode)
-		}
-	})
-}
-
-func TestUpdateAllItemsStatus(t *testing.T) {
-	client := &http.Client{}
-	r := mux.NewRouter()
-	r.HandleFunc("/items", handlers.NewHandler().UpdateAllItemsStatus)
-	ts := httptest.NewServer(r)
-	defer ts.Close()
-	req, err := http.NewRequest(http.MethodPut, ts.URL+"/items", nil)
-	if err != nil {
-		t.Errorf(err.Error())
-		return
+	item := models.Item{
+		ID:          1,
+		Description: "description",
+		Status:      false,
 	}
 
-	resp, err := client.Do(req)
-	if err != nil {
-		t.Errorf(err.Error())
-		return
-	}
+	//not to get "no rows in result set"
+	_, err = repo.InsertItem(item)
+	assert.NoError(t, err)
 
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		t.Errorf("Expected %d, received %d", http.StatusOK, resp.StatusCode)
-	}
+	query := "UPDATE items SET status=TRUE WHERE id=\\?"
+	prep := mock.ExpectPrepare(query)
+	prep.ExpectExec().WithArgs(item.ID).WillReturnResult(sqlmock.NewResult(1, 1))
+
+	id, err := repo.UpdateItemStatus(item.ID)
+	assert.NoError(t, err)
+	assert.Equal(t, id, item.ID)
+
+	t.Cleanup(srv.Cleanup)
 }
 
 func TestDeleteItem(t *testing.T) {
-	client := &http.Client{}
-	r := mux.NewRouter()
-	r.HandleFunc("/items/"+"{id}", handlers.NewHandler().DeleteItem)
-	ts := httptest.NewServer(r)
-	defer ts.Close()
-	t.Run("not found", func(t *testing.T) {
-		req, err := http.NewRequest(http.MethodDelete, ts.URL+"/items/60", nil)
-		if err != nil {
-			t.Errorf(err.Error())
-			return
-		}
+	mock := NewMock()
+	ctx := context.Background()
+	srv, err := postgrestest.Start(ctx)
+	assert.NoError(t, err)
+	pool, err := pgxpool.Connect(context.Background(), srv.DefaultDatabase())
+	assert.NoError(t, err)
+	_, err = pool.Exec(ctx,createTable)
+	assert.NoError(t, err)
+	repo := repository.Connection{
+		Pool: pool,
+	}
+	defer repo.Pool.Close()
 
-		resp, err := client.Do(req)
-		if err != nil {
-			t.Errorf(err.Error())
-			return
-		}
-
-		defer resp.Body.Close()
-		if resp.StatusCode != http.StatusNotFound {
-			t.Errorf("Expected %d, received %d", http.StatusNotFound, resp.StatusCode)
-		}
-	})
-	t.Run("found", func(t *testing.T) {
-		req, err := http.NewRequest(http.MethodDelete, ts.URL+"/items/58", nil)
-		if err != nil {
-			t.Errorf(err.Error())
-			return
-		}
-
-		resp, err := client.Do(req)
-		if err != nil {
-			t.Errorf(err.Error())
-			return
-		}
-
-		defer resp.Body.Close()
-		if resp.StatusCode != http.StatusOK {
-			t.Errorf("Expected %d, received %d", http.StatusOK, resp.StatusCode)
-		}
-	})
-}
-
-func TestDeleteAllItems(t *testing.T) {
-	client := &http.Client{}
-	r := mux.NewRouter()
-	r.HandleFunc("/items", handlers.NewHandler().DeleteAllItems)
-	ts := httptest.NewServer(r)
-	defer ts.Close()
-	req, err := http.NewRequest(http.MethodDelete, ts.URL+"/items", nil)
-	if err != nil {
-		t.Errorf(err.Error())
-		return
+	item := models.Item{
+		ID:          1,
+		Description: "description",
+		Status:      false,
 	}
 
-	resp, err := client.Do(req)
-	if err != nil {
-		t.Errorf(err.Error())
-		return
-	}
+	//not to get "no rows in result set"
+	_, err = repo.InsertItem(item)
+	assert.NoError(t, err)
 
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		t.Errorf("Expected %d, received %d", http.StatusOK, resp.StatusCode)
-	}
+	query := "DELETE FROM items WHERE id = \\?"
+
+	prep := mock.ExpectPrepare(query)
+	prep.ExpectExec().WithArgs(item.ID).WillReturnResult(sqlmock.NewResult(0, 1))
+
+	id, err := repo.DeleteItem(item.ID)
+	assert.NoError(t, err)
+	assert.Equal(t, id, item.ID)
+
+	t.Cleanup(srv.Cleanup)
 }
