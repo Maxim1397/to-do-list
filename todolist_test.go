@@ -35,7 +35,7 @@ func TestCreateItem(t *testing.T) {
 	assert.NoError(t, err)
 	pool, err := pgxpool.Connect(context.Background(), srv.DefaultDatabase())
 	assert.NoError(t, err)
-	_, err = pool.Exec(ctx,createTable)
+	_, err = pool.Exec(ctx, createTable)
 	assert.NoError(t, err)
 	repo := repository.Connection{
 		Pool: pool,
@@ -63,7 +63,7 @@ func TestGetItem(t *testing.T) {
 	assert.NoError(t, err)
 	pool, err := pgxpool.Connect(context.Background(), srv.DefaultDatabase())
 	assert.NoError(t, err)
-	_, err = pool.Exec(ctx,createTable)
+	_, err = pool.Exec(ctx, createTable)
 	assert.NoError(t, err)
 	repo := repository.Connection{
 		Pool: pool,
@@ -97,7 +97,7 @@ func TestUpdateItemStatus(t *testing.T) {
 	assert.NoError(t, err)
 	pool, err := pgxpool.Connect(context.Background(), srv.DefaultDatabase())
 	assert.NoError(t, err)
-	_, err = pool.Exec(ctx,createTable)
+	_, err = pool.Exec(ctx, createTable)
 	assert.NoError(t, err)
 	repo := repository.Connection{
 		Pool: pool,
@@ -132,7 +132,7 @@ func TestDeleteItem(t *testing.T) {
 	assert.NoError(t, err)
 	pool, err := pgxpool.Connect(context.Background(), srv.DefaultDatabase())
 	assert.NoError(t, err)
-	_, err = pool.Exec(ctx,createTable)
+	_, err = pool.Exec(ctx, createTable)
 	assert.NoError(t, err)
 	repo := repository.Connection{
 		Pool: pool,
